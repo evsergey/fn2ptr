@@ -32,6 +32,9 @@ endif()
 
 set(fn2ptr_includes
     include/fn2ptr.h
+    include/fn_factory.h
+    include/lambda_proxy.h
+    include/fnptr_proxy.h
     include/mempage.h
     include/asm.h
 )

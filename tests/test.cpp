@@ -9,16 +9,17 @@ int ff(int x, int y)
     std::cout << "x=" << x << ", y=" << y << std::endl;
     return x + y;
 }
+
 int main()
 {
-    func_ptr_factory<int, int> factory{ 2 };
-    if (factory.capacity() < 2)
+    lambda_proxy_factory<int, int> lp_factory{ 2 };
+    if (lp_factory.capacity() < 2)
     {
         std::cout << "Couldn't create factory" << std::endl;
         return EXIT_FAILURE;
     }
-    interceptor_factory intf{ 1 };
-    if (intf.capacity() < 1)
+    fnptr_proxy_factory fp_factory{ 1 };
+    if (fp_factory.capacity() < 1)
     {
         std::cout << "Couldn't create factory" << std::endl;
         return EXIT_FAILURE;
@@ -26,19 +27,19 @@ int main()
 
     int a = 100500;
     
-    int (*f)(int) = factory.create(
+    int (*f)(int) = lp_factory.create(
         [&a](int b) {
         std::cout << "a=" << a << ", b=" << b << std::endl;
         return a + b;
         });
 
-    int (*F)(int) = factory.create(
+    int (*F)(int) = lp_factory.create(
         [a](int b) {
             std::cout << "A=" << a << ", B=" << b << std::endl;
             return a - b;
         });
 
-    auto g = intf.create(&ff,
+    auto g = fp_factory.create(&ff,
         [&a]() {
             std::cout << "Pre call, a=" << a << std::endl;
         },
