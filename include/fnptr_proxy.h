@@ -44,6 +44,7 @@ namespace fn2ptr
             if (f)
             {
                 *pret = _rets.back();
+                _rets.pop_back();
                 if (_post)
                     _post();
                 return nullptr;
