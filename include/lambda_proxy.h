@@ -1,6 +1,7 @@
 #pragma once
 #include "asm.h"
 
+#include <exception>
 #include <functional>
 
 namespace fn2ptr
@@ -8,7 +9,7 @@ namespace fn2ptr
 template<class R, class... Args>
 class lambda_proxy
 {
-    using func_ptr_t = R(*)(Args...);
+    using func_ptr_t = R(*)(Args...) noexcept;
 public:
     void create(char* buffer) const
     {
@@ -36,7 +37,14 @@ private:
     }
     static R call(Args... args)
     {
-        return (*current())->_fn(args...);
+        try
+        {
+            return (*current())->_fn(args...);
+        }
+        catch (...)
+        {
+            std::terminate();
+        }
     }
 };
 }

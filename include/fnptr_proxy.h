@@ -1,6 +1,7 @@
 #pragma once
 #include "asm.h"
 
+#include <exception>
 #include <functional>
 #include <vector>
 
@@ -15,7 +16,7 @@ namespace fn2ptr
         }
 
         template<class Pre, class Post, class R, class... Args>
-        auto bind(char* buffer, R(*fn)(Args... args), Pre&& pre, Post&& post)
+        auto bind(char* buffer, R(*fn)(Args... args) noexcept, Pre&& pre, Post&& post)
         {
             _fn = (void*)fn;
             _pre = std::forward<Pre>(pre);
@@ -34,25 +35,32 @@ namespace fn2ptr
         std::function<void()> _post;
         std::vector<void*> _rets;
 
-        static void* interceptor(fnptr_proxy* _this, char f, void** pret)
+        static void* interceptor(fnptr_proxy* _this, char f, void** pret) noexcept
         {
             return _this->intercept(f, pret);
         }
 
-        void* intercept(char f, void** pret)
+        void* intercept(char f, void** pret) noexcept
         {
-            if (f)
+            try
             {
-                *pret = _rets.back();
-                _rets.pop_back();
-                if (_post)
-                    _post();
-                return nullptr;
+                if (f)
+                {
+                    *pret = _rets.back();
+                    _rets.pop_back();
+                    if (_post)
+                        _post();
+                    return nullptr;
+                }
+                _rets.push_back(*pret);
+                if (_pre)
+                    _pre();
+                return _fn;
             }
-            _rets.push_back(*pret);
-            if (_pre)
-                _pre();
-            return _fn;
+            catch (...)
+            {
+                std::terminate();
+            }
         }
     };
 }

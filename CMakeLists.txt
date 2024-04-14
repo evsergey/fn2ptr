@@ -1,8 +1,19 @@
 cmake_minimum_required(VERSION 3.14)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(CMAKE_ENABLE_EXPORTS FALSE)
 project(fn2ptr C CXX)
+
+find_package(Catch2 3.4 QUIET)
+if(NOT Catch2_FOUND)
+    Include(FetchContent)
+    FetchContent_Declare(
+      Catch2
+      GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+      GIT_TAG        v3.4.0 # or a later release
+    )
+    FetchContent_MakeAvailable(Catch2)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
@@ -64,4 +75,9 @@ add_executable(fn2ptr_test
 
 target_link_libraries(fn2ptr_test PRIVATE
     fn2ptr
+    Catch2::Catch2WithMain
 )
+
+include(CTest)
+include(Catch)
+catch_discover_tests(fn2ptr_test)

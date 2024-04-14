@@ -1,65 +1,91 @@
 #include "fn2ptr.h"
 
-#include <iostream>
+#include <catch2/catch_all.hpp>
 
 using namespace fn2ptr;
 
-int ff(int x, int y)
+int ff(int x, int y, int z, int w, int p, int q) noexcept
 {
-    std::cout << "x=" << x << ", y=" << y << std::endl;
-    return x + y;
+    return x + y + z + w + p + q;
 }
 
-int main()
+double gg(double x, double y, double z, double w, double p, double q) noexcept
+{
+    return x + y + z + w + p + q;
+}
+
+TEST_CASE("Hooks", "[fn2ptr]")
+{
+    fnptr_proxy_factory fp_factory{ 2 };
+    REQUIRE(fp_factory.capacity() >= 2);
+
+    bool pre_called = false;
+    bool post_called = false;
+    auto f = fp_factory.create(&ff,
+        [&pre_called]() noexcept {
+            int r = ff(2, 3, 4, 5, 6, 7);
+            REQUIRE(r == 2 + 3 + 4 + 5 + 6 + 7);
+            pre_called = true;
+        },
+        [&post_called]() noexcept {
+            int r = ff(2, 3, 4, 5, 6, 7);
+            REQUIRE(r == 2 + 3 + 4 + 5 + 6 + 7);
+            post_called = true;
+        }
+    );
+
+    auto g = fp_factory.create(&gg,
+        [&pre_called]() noexcept {
+            double r = gg(2, 3, 4, 5, 6, 7);
+            REQUIRE(r == 2 + 3 + 4 + 5 + 6 + 7);
+            pre_called = true;
+        },
+        [&post_called]() noexcept {
+            double r = gg(2, 3, 4, 5, 6, 7);
+            REQUIRE(r == 2 + 3 + 4 + 5 + 6 + 7);
+            post_called = true;
+        }
+    );
+
+    int result = f(1, 2, 3, 4, 5, 6);
+    REQUIRE(result == 1 + 2 + 3 + 4 + 5 + 6);
+    REQUIRE(pre_called);
+    REQUIRE(post_called);
+
+    pre_called = post_called = false;
+
+    double fresult = g(1., 2., 3., 4., 5., 6.);
+    REQUIRE(fresult == 1. + 2. + 3. + 4. + 5. + 6.);
+    REQUIRE(pre_called);
+    REQUIRE(post_called);
+}
+
+TEST_CASE("lambda-ptr", "[fn2ptr]")
 {
     lambda_proxy_factory<int, int> lp_factory{ 2 };
-    if (lp_factory.capacity() < 2)
-    {
-        std::cout << "Couldn't create factory" << std::endl;
-        return EXIT_FAILURE;
-    }
-    fnptr_proxy_factory fp_factory{ 1 };
-    if (fp_factory.capacity() < 1)
-    {
-        std::cout << "Couldn't create factory" << std::endl;
-        return EXIT_FAILURE;
-    }
+    REQUIRE(lp_factory.capacity() >= 2);
 
     int a = 100500;
-    
     int (*f)(int) = lp_factory.create(
-        [&a](int b) {
-        std::cout << "a=" << a << ", b=" << b << std::endl;
-        return a + b;
+        [&a](int b) noexcept {
+            return a + b;
         });
 
-    int (*F)(int) = lp_factory.create(
-        [a](int b) {
-            std::cout << "A=" << a << ", B=" << b << std::endl;
+    int (*g)(int) = lp_factory.create(
+        [a](int b) noexcept {
             return a - b;
         });
 
-    auto g = fp_factory.create(&ff,
-        [&a]() {
-            std::cout << "Pre call, a=" << a << std::endl;
-        },
-        [&a]() {
-            std::cout << "Post call, a=" << a << std::endl;
-        }
-    );
-    int q = f(123);
-    std::cout << "q=" << q << std::endl;
-    F(123);
-    a = 333;
-    f(234);
-    F(234);
+    int result = f(123);
+    REQUIRE(result == 100500 + 123);
 
+    result = g(123);
+    REQUIRE(result == 100500 - 123);
 
-    q = g(1, 2);
-    std::cout << "q=" << q << std::endl;
-    a = 3;
-    q = g(4, 5);
-    std::cout << "q=" << q << std::endl;
+    a = 10;
+    result = f(5);
+    REQUIRE(result == 10 + 5);
 
-    return EXIT_SUCCESS;
+    result = g(4);
+    REQUIRE(result == 100500 - 4);
 }
